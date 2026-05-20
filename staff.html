@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工记账 - 美容院收支管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; }
+        .slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-semibold">员工记账</h1>
+                        <p class="text-xs text-pink-100" id="staffName">加载中...</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="text-white/80 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-lg">
+        <!-- 快速记账卡片 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                快速记账
+            </h2>
+
+            <form id="transactionForm" class="space-y-4">
+                <!-- 类型选择 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="income" class="sr-only peer" checked>
+                        <div class="py-3 px-4 rounded-xl border-2 border-gray-200 text-center peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-700 transition">
+                            <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
+                            </svg>
+                            <span class="text-sm font-medium">收入</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="expense" class="sr-only peer">
+                        <div class="py-3 px-4 rounded-xl border-2 border-gray-200 text-center peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-700 transition">
+                            <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path>
+                            </svg>
+                            <span class="text-sm font-medium">支出</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 金额 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">金额（元）</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">¥</span>
+                        <input type="number" id="amount" step="0.01" min="0.01" required
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none text-lg"
+                            placeholder="0.00">
+                    </div>
+                </div>
+
+                <!-- 分类 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">分类</label>
+                    <select id="category" required
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none bg-white">
+                        <option value="">请选择分类</option>
+                        <!-- 收入分类 -->
+                        <optgroup label="收入分类" class="income-options">
+                            <option value="美容服务">美容服务</option>
+                            <option value="美发服务">美发服务</option>
+                            <option value="美甲服务">美甲服务</option>
+                            <option value="产品销售">产品销售</option>
+                            <option value="会员卡充值">会员卡充值</option>
+                            <option value="其他收入">其他收入</option>
+                        </optgroup>
+                        <!-- 支出分类 -->
+                        <optgroup label="支出分类" class="expense-options hidden">
+                            <option value="产品采购">产品采购</option>
+                            <option value="员工工资">员工工资</option>
+                            <option value="房租水电">房租水电</option>
+                            <option value="设备维护">设备维护</option>
+                            <option value="日常耗材">日常耗材</option>
+                            <option value="其他支出">其他支出</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <!-- 备注 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">备注（选填）</label>
+                    <textarea id="description" rows="2"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none resize-none"
+                        placeholder="添加备注信息..."></textarea>
+                </div>
+
+                <!-- 提交按钮 -->
+                <button type="submit" 
+                    class="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-4 rounded-xl font-semibold text-lg hover:from-pink-600 hover:to-purple-600 transition transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
+                    确认记账
+                </button>
+            </form>
+
+            <!-- 成功提示 -->
+            <div id="successMessage" class="hidden mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-center slide-up">
+                <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span class="font-medium">记账成功！</span>
+            </div>
+        </div>
+
+        <!-- 今日记录 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">今日记录</h2>
+                <button onclick="loadTodayRecords()" class="text-pink-500 hover:text-pink-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="todayRecords" class="space-y-3">
+                <p class="text-gray-400 text-center py-4">暂无记录</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        let token = localStorage.getItem('token');
+        let user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        // 检查登录状态
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        // 显示员工名称
+        document.getElementById('staffName').textContent = user.name || '员工';
+
+        // 类型切换时更新分类选项
+        document.querySelectorAll('input[name="type"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const categorySelect = document.getElementById('category');
+                const incomeOptions = categorySelect.querySelector('.income-options');
+                const expenseOptions = categorySelect.querySelector('.expense-options');
+
+                if (e.target.value === 'income') {
+                    incomeOptions.classList.remove('hidden');
+                    expenseOptions.classList.add('hidden');
+                } else {
+                    incomeOptions.classList.add('hidden');
+                    expenseOptions.classList.remove('hidden');
+                }
+                categorySelect.value = '';
+            });
+        });
+
+        // 提交表单
+        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const category = document.getElementById('category').value;
+            const description = document.getElementById('description').value;
+
+            try {
+                const response = await fetch(`${API_URL}/api/transactions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ type, amount, category, description })
+                });
+
+                if (response.ok) {
+                    // 显示成功消息
+                    const successMsg = document.getElementById('successMessage');
+                    successMsg.classList.remove('hidden');
+                    
+                    // 重置表单
+                    document.getElementById('transactionForm').reset();
+                    document.querySelector('input[name="type"][value="income"]').checked = true;
+                    document.querySelector('.income-options').classList.remove('hidden');
+                    document.querySelector('.expense-options').classList.add('hidden');
+
+                    // 刷新记录列表
+                    loadTodayRecords();
+
+                    // 3秒后隐藏成功消息
+                    setTimeout(() => {
+                        successMsg.classList.add('hidden');
+                    }, 3000);
+                } else {
+                    const data = await response.json();
+                    alert(data.message || '记账失败');
+                }
+            } catch (error) {
+                alert('网络错误，请稍后重试');
+            }
+        });
+
+        // 加载今日记录
+        async function loadTodayRecords() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            try {
+                const response = await fetch(`${API_URL}/api/transactions?startDate=${today}&endDate=${today}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const records = await response.json();
+                    displayRecords(records);
+                }
+            } catch (error) {
+                console.error('加载记录失败:', error);
+            }
+        }
+
+        // 显示记录列表
+        function displayRecords(records) {
+            const container = document.getElementById('todayRecords');
+            
+            if (records.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-4">暂无记录</p>';
+                return;
+            }
+
+            container.innerHTML = records.map(record => `
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl slide-up">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 ${record.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'} rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                ${record.type === 'income' 
+                                    ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>'
+                                    : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path>'
+                                }
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800">${record.category}</p>
+                            <p class="text-xs text-gray-500">${new Date(record.created_at).toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold ${record.type === 'income' ? 'text-green-600' : 'text-red-600'}">
+                            ${record.type === 'income' ? '+' : '-'}¥${record.amount.toFixed(2)}
+                        </p>
+                        ${record.description ? `<p class="text-xs text-gray-400 truncate max-w-[100px]">${record.description}</p>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+
+        // 页面加载时获取今日记录
+        loadTodayRecords();
+    </script>
+</body>
+</html>
