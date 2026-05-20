@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>老板后台 - 美容院收支管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; }
+        .tab-active { border-bottom: 2px solid #ec4899; color: #ec4899; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-semibold">老板后台</h1>
+                        <p class="text-xs text-purple-100">数据统计与管理</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="text-white/80 hover:text-white flex items-center space-x-1">
+                    <span class="text-sm">退出</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 标签页 -->
+    <div class="bg-white shadow">
+        <div class="container mx-auto px-4">
+            <div class="flex space-x-6">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-active py-4 px-2 font-medium text-sm">
+                    数据概览
+                </button>
+                <button onclick="switchTab('records')" id="tab-records" class="py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700">
+                    收支明细
+                </button>
+                <button onclick="switchTab('staff')" id="tab-staff" class="py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700">
+                    员工管理
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6">
+        <!-- 数据概览页 -->
+        <div id="page-dashboard" class="space-y-6">
+            <!-- 日期筛选 -->
+            <div class="bg-white rounded-xl shadow p-4">
+                <div class="flex flex-wrap gap-3 items-end">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">开始日期</label>
+                        <input type="date" id="startDate" class="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">结束日期</label>
+                        <input type="date" id="endDate" class="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none">
+                    </div>
+                    <button onclick="loadStatistics()" class="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm hover:bg-pink-600 transition">
+                        查询
+                    </button>
+                    <button onclick="setDateRange('today')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition">今日</button>
+                    <button onclick="setDateRange('week')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition">本周</button>
+                    <button onclick="setDateRange('month')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition">本月</button>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">总收入</p>
+                            <p class="text-2xl font-bold text-green-600 mt-1" id="totalIncome">¥0.00</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">总支出</p>
+                            <p class="text-2xl font-bold text-red-600 mt-1" id="totalExpense">¥0.00</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">净利润</p>
+                            <p class="text-2xl font-bold text-purple-600 mt-1" id="totalProfit">¥0.00</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图表区域 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="font-semibold text-gray-800 mb-4">收支分类统计</h3>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="font-semibold text-gray-800 mb-4">员工业绩统计</h3>
+                    <div id="staffStats" class="space-y-3">
+                        <p class="text-gray-400 text-center py-4">暂无数据</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 收支明细页 -->
+        <div id="page-records" class="hidden space-y-4">
+            <div class="bg-white rounded-xl shadow p-4">
+                <div class="flex flex-wrap gap-3 items-end">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">开始日期</label>
+                        <input type="date" id="recordStartDate" class="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">结束日期</label>
+                        <input type="date" id="recordEndDate" class="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">类型</label>
+                        <select id="recordType" class="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none">
+                            <option value="">全部</option>
+                            <option value="income">收入</option>
+                            <option value="expense">支出</option>
+                        </select>
+                    </div>
+                    <button onclick="loadRecords()" class="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm hover:bg-pink-600 transition">
+                        查询
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">时间</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">类型</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">分类</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">金额</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">员工</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">备注</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsTable" class="divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="7" class="px-4 py-8 text-center text-gray-400">暂无记录</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 员工管理页 -->
+        <div id="page-staff" class="hidden space-y-4">
+            <div class="bg-white rounded-xl shadow p-6">
+                <h3 class="font-semibold text-gray-800 mb-4">添加新员工</h3>
+                <form id="addStaffForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">用户名</label>
+                        <input type="text" id="staffUsername" required
+                            class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none"
+                            placeholder="用于登录">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">密码</label>
+                        <input type="password" id="staffPassword" required
+                            class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none"
+                            placeholder="登录密码">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">姓名</label>
+                        <input type="text" id="staffName" required
+                            class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none"
+                            placeholder="显示名称">
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm hover:bg-pink-600 transition">
+                        添加员工
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-xl shadow overflow-hidden">
+                <div class="px-6 py-4 border-b">
+                    <h3 class="font-semibold text-gray-800">员工列表</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">用户名</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">姓名</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">创建时间</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffTable" class="divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="5" class="px-6 py-8 text-center text-gray-400">暂无员工</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        let token = localStorage.getItem('token');
+        let user = JSON.parse(localStorage.getItem('user') || '{}');
+        let categoryChart = null;
+
+        // 检查登录状态
+        if (!token || user.role !== 'boss') {
+            window.location.href = '/';
+        }
+
+        // 设置默认日期
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('startDate').value = today;
+        document.getElementById('endDate').value = today;
+        document.getElementById('recordStartDate').value = today;
+        document.getElementById('recordEndDate').value = today;
+
+        // 切换标签页
+        function switchTab(tab) {
+            ['dashboard', 'records', 'staff'].forEach(t => {
+                document.getElementById(`page-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('tab-active');
+                document.getElementById(`tab-${t}`).classList.add('text-gray-500');
+            });
+            document.getElementById(`page-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('tab-active');
+            document.getElementById(`tab-${tab}`).classList.remove('text-gray-500');
+
+            if (tab === 'staff') loadStaffList();
+            if (tab === 'records') loadRecords();
+        }
+
+        // 设置日期范围
+        function setDateRange(range) {
+            const end = new Date();
+            let start = new Date();
+
+            if (range === 'today') {
+                start = new Date();
+            } else if (range === 'week') {
+                start.setDate(end.getDate() - 7);
+            } else if (range === 'month') {
+                start.setMonth(end.getMonth() - 1);
+            }
+
+            document.getElementById('startDate').value = start.toISOString().split('T')[0];
+            document.getElementById('endDate').value = end.toISOString().split('T')[0];
+            loadStatistics();
+        }
+
+        // 加载统计数据
+        async function loadStatistics() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            try {
+                const response = await fetch(`${API_URL}/api/statistics?startDate=${startDate}&endDate=${endDate}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // 更新统计卡片
+                    document.getElementById('totalIncome').textContent = `¥${data.income.toFixed(2)}`;
+                    document.getElementById('totalExpense').textContent = `¥${data.expense.toFixed(2)}`;
+                    document.getElementById('totalProfit').textContent = `¥${data.profit.toFixed(2)}`;
+
+                    // 更新分类图表
+                    updateCategoryChart(data.categories);
+
+                    // 更新员工统计
+                    updateStaffStats(data.staffStats);
+                }
+            } catch (error) {
+                console.error('加载统计失败:', error);
+            }
+        }
+
+        // 更新分类图表
+        function updateCategoryChart(categories) {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+
+            const incomeData = categories.filter(c => c.type === 'income');
+            const expenseData = categories.filter(c => c.type === 'expense');
+
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [...incomeData.map(c => c.category), ...expenseData.map(c => c.category)],
+                    datasets: [{
+                        data: [...incomeData.map(c => c.total), ...expenseData.map(c => c.total)],
+                        backgroundColor: [
+                            ...incomeData.map(() => '#10b981'),
+                            ...expenseData.map(() => '#ef4444')
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 更新员工统计
+        function updateStaffStats(staffStats) {
+            const container = document.getElementById('staffStats');
+            
+            if (staffStats.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-4">暂无数据</p>';
+                return;
+            }
+
+            container.innerHTML = staffStats.map(staff => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
+                            <span class="text-pink-600 font-medium">${staff.name.charAt(0)}</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800">${staff.name}</p>
+                            <p class="text-xs text-gray-500">${staff.record_count} 笔记录</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-green-600">+¥${staff.income.toFixed(2)}</p>
+                        <p class="text-sm text-red-600">-¥${staff.expense.toFixed(2)}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 加载记录列表
+        async function loadRecords() {
+            const startDate = document.getElementById('recordStartDate').value;
+            const endDate = document.getElementById('recordEndDate').value;
+            const type = document.getElementById('recordType').value;
+
+            let url = `${API_URL}/api/transactions?startDate=${startDate}&endDate=${endDate}`;
+            if (type) url += `&type=${type}`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const records = await response.json();
+                    displayRecords(records);
+                }
+            } catch (error) {
+                console.error('加载记录失败:', error);
+            }
+        }
+
+        // 显示记录
+        function displayRecords(records) {
+            const tbody = document.getElementById('recordsTable');
+            
+            if (records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">暂无记录</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = records.map(record => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-900">
+                        ${new Date(record.created_at).toLocaleString('zh-CN')}
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded-full ${record.type === 'income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                            ${record.type === 'income' ? '收入' : '支出'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-900">${record.category}</td>
+                    <td class="px-4 py-3 text-sm font-medium ${record.type === 'income' ? 'text-green-600' : 'text-red-600'}">
+                        ${record.type === 'income' ? '+' : '-'}¥${record.amount.toFixed(2)}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-900">${record.staff_name}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">${record.description || '-'}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="deleteRecord(${record.id})" class="text-red-500 hover:text-red-700 text-sm">
+                            删除
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 删除记录
+        async function deleteRecord(id) {
+            if (!confirm('确定要删除这条记录吗？')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/transactions/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    loadRecords();
+                    loadStatistics();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
+        // 加载员工列表
+        async function loadStaffList() {
+            try {
+                const response = await fetch(`${API_URL}/api/staff`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const staff = await response.json();
+                    displayStaffList(staff);
+                }
+            } catch (error) {
+                console.error('加载员工列表失败:', error);
+            }
+        }
+
+        // 显示员工列表
+        function displayStaffList(staff) {
+            const tbody = document.getElementById('staffTable');
+            
+            if (staff.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-400">暂无员工</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = staff.map(s => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-900">${s.id}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${s.username}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${s.name}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        ${new Date(s.created_at).toLocaleDateString('zh-CN')}
+                    </td>
+                    <td class="px-6 py-4">
+                        <button onclick="deleteStaff(${s.id})" class="text-red-500 hover:text-red-700 text-sm">
+                            删除
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 添加员工
+        document.getElementById('addStaffForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('staffUsername').value;
+            const password = document.getElementById('staffPassword').value;
+            const name = document.getElementById('staffName').value;
+
+            try {
+                const response = await fetch(`${API_URL}/api/staff`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ username, password, name })
+                });
+
+                if (response.ok) {
+                    document.getElementById('addStaffForm').reset();
+                    loadStaffList();
+                } else {
+                    const data = await response.json();
+                    alert(data.message || '添加失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        });
+
+        // 删除员工
+        async function deleteStaff(id) {
+            if (!confirm('确定要删除这名员工吗？')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/staff/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    loadStaffList();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+
+        // 页面加载时获取数据
+        loadStatistics();
+    </script>
+</body>
+</html>
