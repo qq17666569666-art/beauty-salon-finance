@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: beauty-salon-finance
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server-feishu.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FEISHU_APP_ID
+        value: cli_aa87c5b09bf91cdd
+      - key: FEISHU_APP_SECRET
+        value: fBC5GCToNV1L51nNs8NgVvMHPnoZftyq
+      - key: FEISHU_APP_TOKEN
+        value: NjQwbaNo7aWvs3skGlgctBBunBd
+      - key: FEISHU_TRANSACTION_TABLE
+        value: tbl4EkMZ3oQwIPpN
